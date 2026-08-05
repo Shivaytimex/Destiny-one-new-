@@ -1,0 +1,10 @@
+import Head from "next/head";
+import {useMemo,useState} from "react";
+import {allRoutes,routeGroups} from "../data/routeManifest";
+
+export default function PreviewPage(){
+  const [selected,setSelected]=useState("/");const [query,setQuery]=useState("");const [mobile,setMobile]=useState(false);
+  const groups=useMemo(()=>routeGroups.map(group=>({...group,routes:group.routes.filter(([label,href])=>`${label} ${href}`.toLowerCase().includes(query.toLowerCase()))})).filter(group=>group.routes.length),[query]);
+  const current=allRoutes.find(route=>route.href===selected)||allRoutes[0];
+  return <><Head><title>DestinyOne · Frontend-only preview</title></Head><main className="all-pages-preview"><aside className="preview-catalog"><div className="preview-brand"><span className="preview-brand-mark">D1</span><div><strong>DestinyOne</strong><small>Frontend-only handoff</small></div></div><p className="preview-intro">{allRoutes.length} clean Next.js routes · no backend runtime</p><label className="preview-search"><span className="sr-only">Search pages</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search routes…"/></label><nav className="preview-screen-list">{groups.map(group=><section key={group.label}><h2>{group.label}</h2>{group.routes.map(([label,href])=><button key={href} className={selected===href?"active":""} onClick={()=>setSelected(href)}><span>{label}<small>{href}</small></span></button>)}</section>)}</nav></aside><section className="preview-workspace"><header className="preview-toolbar"><div><p>FRONTEND ROUTE</p><h1>{current.label}</h1><span>{current.href}</span></div><div className="preview-actions"><div className="preview-viewport-toggle"><button className={!mobile?"active":""} onClick={()=>setMobile(false)}>Desktop</button><button className={mobile?"active":""} onClick={()=>setMobile(true)}>Mobile</button></div><a href={current.href} target="_blank" rel="noreferrer">Open page</a></div></header><div className={`preview-frame-wrap ${mobile?"is-mobile":""}`}><iframe key={`${selected}-${mobile}`} title={`${current.label} preview`} src={current.href}/></div></section></main></>;
+}
