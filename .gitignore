@@ -1,16 +1,8 @@
 node_modules/
-frontend/.next/
 .next/
-frontend/out/
-frontend/public/actual-app/
-.pnpm-store/
-.expo/
+out/
 dist/
-.env
-.env.local
-.env.*.local
-*.log
+.netlify/
 .DS_Store
-
-# Local Netlify folder
-.netlify
+*.log
+*.tsbuildinfo

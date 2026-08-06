@@ -1,57 +1,54 @@
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+export const dateCategories = ["All", "Restaurant", "Cafe", "Park", "Activity", "Cultural", "Hotel", "Wellness", "Tourist"];
 
-export type MarketplacePlaceCategory =
-  | 'Restaurant'
-  | 'Cafe'
-  | 'Hotel'
-  | 'Wellness'
-  | 'Tourist'
-  | 'Activity'
-  | 'Park'
-  | 'Dessert'
-  | 'Lounge'
-  | 'Cultural';
+const definitions = [
+  ["Restaurant", "Top-rated romantic restaurants", "Dinner matched to cuisine, budget and date style", "$$"],
+  ["Cafe", "Quiet coffee & chai", "A low-pressure public first meeting", "$"],
+  ["Park", "Parks, gardens & sunset walks", "Easy conversation with a flexible exit", "Free"],
+  ["Activity", "Something fun to do together", "Classes, comedy, games and local events", "$$"],
+  ["Cultural", "Museums, galleries & culture", "Built-in conversation starters", "$–$$"],
+  ["Hotel", "Hotels & vacation stays", "Compare stays and cancellation terms", "$$$"],
+  ["Wellness", "Couples spa & wellness", "A relaxing shared experience", "$$$"],
+  ["Tourist", "Local gems & weekend trips", "Fresh attractions around your profile city", "$–$$$"],
+];
 
-export type MarketplacePlace = {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  category: MarketplacePlaceCategory;
-  price: string;
-  rating?: number;
-  ratingCount?: number;
-  openNow?: boolean;
-  mapsUrl?: string;
-  latitude?: number;
-  longitude?: number;
+const categoryFromQuery = (query) => {
+  const text = query.toLowerCase();
+  if (/airbnb|hotel|stay|resort/.test(text)) return "Hotel";
+  if (/restaurant|dinner|food|brunch/.test(text)) return "Restaurant";
+  if (/coffee|cafe|chai/.test(text)) return "Cafe";
+  if (/park|garden|walk|trail/.test(text)) return "Park";
+  if (/museum|gallery|culture|art/.test(text)) return "Cultural";
+  if (/spa|massage|wellness/.test(text)) return "Wellness";
+  if (/trip|travel|attraction|romantic place/.test(text)) return "Tourist";
+  if (/activity|comedy|class|game|things to do/.test(text)) return "Activity";
+  return "All";
 };
 
-export type MarketplacePlacePage = {
-  places: MarketplacePlace[];
-  nextPageToken?: string;
-};
+const providerLinks = (city, query) => ({
+  maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${query} ${city}`)}`,
+  airbnb: `https://www.airbnb.com/s/${encodeURIComponent(city)}/homes`,
+  hotels: `https://www.google.com/travel/search?q=${encodeURIComponent(`${query} ${city}`)}`,
+});
 
-type SearchPlacesResponse = MarketplacePlacePage & { error?: string };
+export function fallbackPlaces(city, query = "", category = "All") {
+  const inferred = category === "All" ? categoryFromQuery(query) : category;
+  return definitions.filter(([kind]) => inferred === "All" || kind === inferred).map(([kind, name, summary, price], index) => ({
+    id: `fallback-${kind.toLowerCase()}`,
+    name,
+    city,
+    address: `Near ${city}`,
+    category: kind,
+    summary,
+    price,
+    matchScore: 97 - index * 2,
+    rating: 0,
+    ratingCount: 0,
+    mapsUrl: providerLinks(city, query || name).maps,
+    providerLinks: providerLinks(city, query || name),
+    source: "provider-search",
+  }));
+}
 
-export async function searchMarketplacePlaces(input: {
-  city: string;
-  query?: string;
-  category?: MarketplacePlaceCategory | 'All';
-  pageToken?: string;
-}): Promise<MarketplacePlacePage | null> {
-  if (!isSupabaseConfigured) return null;
-
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) throw sessionError;
-  // Public previews still show the personalized city fallback. Live provider
-  // inventory is requested only after a real authenticated session exists.
-  if (!sessionData.session) return null;
-
-  const { data, error } = await supabase.functions.invoke<SearchPlacesResponse>('search-places', {
-    body: input,
-  });
-  if (error) throw new Error(data?.error || error.message || 'Live place search is temporarily unavailable.');
-  if (data?.error) throw new Error(data.error);
-  return { places: data?.places ?? [], nextPageToken: data?.nextPageToken };
+export async function searchPlaces({ city, query, category }) {
+  return { mode: "frontend-preview", places: fallbackPlaces(city, query, category) };
 }

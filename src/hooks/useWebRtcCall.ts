@@ -1,102 +1,101 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MatchRealtimeSession, RealtimeCallEvent, RealtimeCallSignal } from '../services/realtimeChat';
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export type WebRtcCallState='permission'|'ringing'|'connecting'|'connected'|'blocked'|'ended';
-
-function configuredIceServers(): RTCIceServer[] {
-  const fallback:RTCIceServer[]=[{urls:['stun:stun.cloudflare.com:3478']}];
-  try{
-    const parsed=JSON.parse(process.env.EXPO_PUBLIC_WEBRTC_ICE_SERVERS??'null') as unknown;
-    return Array.isArray(parsed)&&parsed.length?parsed as RTCIceServer[]:fallback;
-  }catch{return fallback}
+function configuredIceServers() {
+  const fallback = [{ urls: ["stun:stun.cloudflare.com:3478"] }];
+  try {
+    const parsed = null;
+    return Array.isArray(parsed) && parsed.length ? parsed : fallback;
+  } catch { return fallback; }
 }
 
-export function useWebRtcCall({mode,incomingCallId,session,callEvent,onRemoteEnded}:{mode:'audio'|'video'|null;incomingCallId:string|null;session:MatchRealtimeSession|null;callEvent:RealtimeCallEvent|null;onRemoteEnded?:()=>void}){
-  const [state,setState]=useState<WebRtcCallState>('permission');
-  const [error,setError]=useState('');
-  const [muted,setMuted]=useState(false);
-  const [camera,setCamera]=useState(mode==='video');
-  const [localStream,setLocalStream]=useState<MediaStream|null>(null);
-  const [remoteStream,setRemoteStream]=useState<MediaStream|null>(null);
-  const callId=useRef(incomingCallId??`call-${Date.now()}-${Math.random().toString(36).slice(2,9)}`);
-  const peer=useRef<RTCPeerConnection|null>(null);
-  const localStreamRef=useRef<MediaStream|null>(null);
-  const pendingIce=useRef<RTCIceCandidateInit[]>([]);
-  const offered=useRef(false);
-  const processedEvents=useRef(new Set<string>());
+export default function useWebRtcCall({ mode, incomingCallId, emitCall, callEvent, onRemoteEnded }) {
+  const [state, setState] = useState("permission");
+  const [error, setError] = useState("");
+  const [muted, setMuted] = useState(false);
+  const [camera, setCamera] = useState(mode === "video");
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const callId = useRef(incomingCallId || `call-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+  const peer = useRef(null);
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const pendingIce = useRef([]);
+  const offered = useRef(false);
+  const processedEvents = useRef(new Set());
 
-  const emit=useCallback(async(event:RealtimeCallEvent['event'],signal?:RealtimeCallSignal)=>{
-    if(!session||!mode)return;
-    await session.sendCall({event,mode,clientCallId:callId.current,signal});
-  },[mode,session]);
+  const stopMedia = useCallback(() => {
+    peer.current?.close(); peer.current = null;
+    localStreamRef.current?.getTracks().forEach((track) => track.stop());
+    remoteStreamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
 
-  const stopMedia=useCallback(()=>{
-    peer.current?.close();peer.current=null;
-    localStreamRef.current?.getTracks().forEach(track=>track.stop());
-    localStreamRef.current=null;setLocalStream(null);setRemoteStream(null);
-  },[]);
-
-  const makeOffer=useCallback(async()=>{
-    if(!peer.current||offered.current)return;
-    offered.current=true;setState('connecting');
-    const offer=await peer.current.createOffer();
+  const makeOffer = useCallback(async () => {
+    if (!peer.current || offered.current) return;
+    offered.current = true; setState("connecting");
+    const offer = await peer.current.createOffer();
     await peer.current.setLocalDescription(offer);
-    if(offer.sdp)await emit('signal',{type:'offer',sdp:offer.sdp});
-  },[emit]);
+    emitCall("signal", { mode, clientCallId: callId.current, signal: { type: "offer", sdp: offer.sdp } });
+  }, [emitCall, mode]);
 
-  const start=useCallback(async()=>{
-    if(!mode||!session)return;
-    setError('');setState('permission');
-    try{
-      if(typeof window==='undefined'||!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection)throw new Error('Live media calls require the DestinyOne web app or a native WebRTC development build.');
-      stopMedia();offered.current=false;pendingIce.current=[];processedEvents.current.clear();
-      const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:mode==='video'});
-      const connection=new RTCPeerConnection({iceServers:configuredIceServers(),iceCandidatePoolSize:4});
-      stream.getTracks().forEach(track=>connection.addTrack(track,stream));
-      connection.ontrack=({streams})=>{if(streams[0])setRemoteStream(streams[0])};
-      connection.onicecandidate=({candidate})=>{if(candidate)void emit('signal',{type:'ice',candidate:candidate.toJSON()}).catch(()=>undefined)};
-      connection.onconnectionstatechange=()=>{
-        if(connection.connectionState==='connected')setState('connected');
-        if(connection.connectionState==='failed'||connection.connectionState==='disconnected'){setError('The secure call connection was interrupted.');setState('blocked')}
-        if(connection.connectionState==='closed')setState('ended');
+  const start = useCallback(async () => {
+    setError(""); setState("permission");
+    try {
+      if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection) throw new Error("WebRTC is not available on this device.");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === "video" });
+      const connection = new RTCPeerConnection({ iceServers: configuredIceServers(), iceCandidatePoolSize: 4 });
+      stream.getTracks().forEach((track) => connection.addTrack(track, stream));
+      connection.ontrack = ({ streams }) => { if (streams[0]) { remoteStreamRef.current = streams[0]; setRemoteStream(streams[0]); } };
+      connection.onicecandidate = ({ candidate }) => {
+        if (candidate) emitCall("signal", { mode, clientCallId: callId.current, signal: { type: "ice", candidate: candidate.toJSON() } });
       };
-      peer.current=connection;localStreamRef.current=stream;setLocalStream(stream);
-      if(incomingCallId){setState('connecting');await emit('accept')}
-      else{setState('ringing');await emit('invite')}
-    }catch(cause){stopMedia();setState('blocked');setError(cause instanceof Error?cause.message:'Camera or microphone permission is required.')}
-  },[emit,incomingCallId,mode,session,stopMedia]);
+      connection.onconnectionstatechange = () => {
+        if (["connected"].includes(connection.connectionState)) setState("connected");
+        if (["failed", "disconnected"].includes(connection.connectionState)) { setError("The secure call connection was interrupted."); setState("blocked"); }
+        if (connection.connectionState === "closed") setState("ended");
+      };
+      peer.current = connection; localStreamRef.current = stream; setLocalStream(stream);
+      if (incomingCallId) { setState("connecting"); emitCall("accept", { mode, clientCallId: callId.current }); }
+      else { setState("ringing"); emitCall("invite", { mode, clientCallId: callId.current }); }
+    } catch (cause) {
+      setState("blocked");
+      setError(cause instanceof Error ? cause.message : `${mode === "video" ? "Camera and microphone" : "Microphone"} permission is required.`);
+    }
+  }, [emitCall, incomingCallId, mode]);
 
-  useEffect(()=>{if(mode&&session)void start();return()=>stopMedia()},[mode,session,start,stopMedia]);
-  useEffect(()=>{localStream?.getAudioTracks().forEach(track=>{track.enabled=!muted})},[localStream,muted]);
-  useEffect(()=>{localStream?.getVideoTracks().forEach(track=>{track.enabled=camera})},[camera,localStream]);
-  useEffect(()=>{
-    if(state!=='ringing'||incomingCallId)return;
-    const timer=setTimeout(()=>{void emit('missed').catch(()=>undefined);stopMedia();setState('ended');onRemoteEnded?.()},35000);
-    return()=>clearTimeout(timer);
-  },[emit,incomingCallId,onRemoteEnded,state,stopMedia]);
-  useEffect(()=>{
-    if(!callEvent||callEvent.clientCallId!==callId.current||!peer.current)return;
-    const signal=callEvent.signal;
-    const key=`${callEvent.event}:${callEvent.at??''}:${signal?.type??''}:${signal?.type==='ice'?signal.candidate.candidate:signal?.sdp??''}`;
-    if(processedEvents.current.has(key))return;
-    processedEvents.current.add(key);
-    const connection=peer.current;
-    const handle=async()=>{
-      if(callEvent.event==='accept'&&!incomingCallId){await makeOffer();return}
-      if(['reject','end','missed','failed'].includes(callEvent.event)){stopMedia();setState('ended');onRemoteEnded?.();return}
-      if(callEvent.event!=='signal'||!signal)return;
-      if(signal.type==='offer'){
-        await connection.setRemoteDescription({type:'offer',sdp:signal.sdp});
-        const answer=await connection.createAnswer();await connection.setLocalDescription(answer);
-        if(answer.sdp)await emit('signal',{type:'answer',sdp:answer.sdp});
-      }else if(signal.type==='answer')await connection.setRemoteDescription({type:'answer',sdp:signal.sdp});
-      else if(signal.type==='ice'&&connection.remoteDescription)await connection.addIceCandidate(signal.candidate);
-      else if(signal.type==='ice')pendingIce.current.push(signal.candidate);
-      if(connection.remoteDescription&&pendingIce.current.length){const queued=pendingIce.current.splice(0);for(const candidate of queued)await connection.addIceCandidate(candidate)}
+  useEffect(() => { void start(); return () => { peer.current?.close(); }; }, [start]);
+  useEffect(() => { localStream?.getAudioTracks().forEach((track) => { track.enabled = !muted; }); }, [localStream, muted]);
+  useEffect(() => { localStream?.getVideoTracks().forEach((track) => { track.enabled = camera; }); }, [camera, localStream]);
+
+  useEffect(() => {
+    if (!callEvent || callEvent.clientCallId !== callId.current || !peer.current) return;
+    const eventKey = `${callEvent.event}:${callEvent.at || ""}:${callEvent.signal?.type || ""}:${callEvent.signal?.sdp || callEvent.signal?.candidate?.candidate || ""}`;
+    if (processedEvents.current.has(eventKey)) return;
+    processedEvents.current.add(eventKey);
+    const connection = peer.current;
+    const handle = async () => {
+      if (callEvent.event === "accept" && !incomingCallId) { await makeOffer(); return; }
+      if (["reject", "end", "missed"].includes(callEvent.event)) {
+        stopMedia(); setState("ended"); onRemoteEnded?.(callEvent.event); return;
+      }
+      const signal = callEvent.event === "signal" ? callEvent.signal : null;
+      if (!signal) return;
+      if (signal.type === "offer") {
+        await connection.setRemoteDescription({ type: "offer", sdp: signal.sdp });
+        const answer = await connection.createAnswer(); await connection.setLocalDescription(answer);
+        emitCall("signal", { mode, clientCallId: callId.current, signal: { type: "answer", sdp: answer.sdp } });
+      } else if (signal.type === "answer") {
+        await connection.setRemoteDescription({ type: "answer", sdp: signal.sdp });
+      } else if (signal.type === "ice" && signal.candidate) {
+        if (connection.remoteDescription) await connection.addIceCandidate(signal.candidate);
+        else pendingIce.current.push(signal.candidate);
+      }
+      if (connection.remoteDescription && pendingIce.current.length) {
+        const queued = pendingIce.current.splice(0); for (const candidate of queued) await connection.addIceCandidate(candidate);
+      }
     };
-    void handle().catch(cause=>{setError(cause instanceof Error?cause.message:'Secure call negotiation failed.');setState('blocked')});
-  },[callEvent,emit,incomingCallId,makeOffer,onRemoteEnded,stopMedia]);
+    void handle().catch((cause) => { setError(cause instanceof Error ? cause.message : "Secure call negotiation failed."); setState("blocked"); });
+  }, [callEvent, emitCall, incomingCallId, makeOffer, mode, onRemoteEnded, stopMedia]);
 
-  const end=useCallback(()=>{void emit('end').catch(()=>undefined);stopMedia();setState('ended')},[emit,stopMedia]);
-  return{state,error,muted,setMuted,camera,setCamera,localStream,remoteStream,retry:start,end};
+  const end = useCallback(() => { emitCall("end", { mode, clientCallId: callId.current, reason: "member_ended" }); stopMedia(); setState("ended"); }, [emitCall, mode, stopMedia]);
+  return { state, error, muted, setMuted, camera, setCamera, localStream, remoteStream, retry: start, end, callId: callId.current };
 }
