@@ -1,0 +1,32 @@
+{
+  "name": "destinyone-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test:routes": "node scripts/route-integrity.mjs",
+    "test:features": "node scripts/feature-coverage.mjs",
+    "test:boundaries": "node scripts/check-frontend-boundaries.mjs",
+    "test:handoff": "node scripts/handoff-integrity.mjs",
+    "typecheck": "tsc --noEmit",
+    "verify": "pnpm test:handoff && pnpm test:boundaries && pnpm test:routes && pnpm test:features && pnpm typecheck && pnpm build"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.31",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2"
+  }
+}

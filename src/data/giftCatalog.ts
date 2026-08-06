@@ -1,0 +1,9 @@
+export const giftCatalog = [
+  {id:"velvet-ruby-roses",name:"Velvet Ruby Roses",description:"A lush romantic bouquet with a handwritten note.",category:"Flowers",emoji:"💐",eta:"Same day",priceCents:4900,deliveryFeeCents:799,deliveryWindows:["asap","today","scheduled"],moods:["romantic","comforting"],serviceLevel:"same_day",active:true},
+  {id:"gelato-date-night",name:"Gelato Date Night",description:"Three premium flavors for a playful night in.",category:"Sweet",emoji:"🍨",eta:"45–75 min",priceCents:2600,deliveryFeeCents:599,deliveryWindows:["today","scheduled"],moods:["playful","romantic"],serviceLevel:"same_day",active:true},
+  {id:"chai-coffee-two",name:"Chai & Coffee for Two",description:"A warm drink duo for your favorite conversation.",category:"Cozy",emoji:"☕",eta:"45–75 min",priceCents:2200,deliveryFeeCents:499,deliveryWindows:["asap","today"],moods:["comforting","romantic"],serviceLevel:"on_demand",active:true},
+  {id:"artisan-love-chocolates",name:"Artisan Love Chocolates",description:"Twelve handcrafted chocolates in a keepsake box.",category:"Sweet",emoji:"🍫",eta:"Same day",priceCents:3600,deliveryFeeCents:599,deliveryWindows:["today","scheduled"],moods:["romantic","celebratory"],serviceLevel:"same_day",active:true},
+  {id:"memory-photo-book",name:"Our Story Photo Book",description:"A premium keepsake for shared memories.",category:"Keepsake",emoji:"📖",eta:"2–3 days",priceCents:5400,deliveryFeeCents:699,deliveryWindows:["scheduled"],moods:["romantic","celebratory"],serviceLevel:"scheduled",active:true},
+  {id:"spa-calm-box",name:"Calm & Care Box",description:"Tea, candle and self-care essentials for a thoughtful reset.",category:"Wellness",emoji:"🕯️",eta:"Same day",priceCents:4200,deliveryFeeCents:699,deliveryWindows:["today","scheduled"],moods:["comforting"],serviceLevel:"same_day",active:true}
+];
+export default giftCatalog;
