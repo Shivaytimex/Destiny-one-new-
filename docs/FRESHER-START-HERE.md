@@ -8,7 +8,7 @@ fails. `pnpm dev` starts the app at `http://localhost:3000`.
 ## 2. Find the feature
 
 Open `/preview` in the browser. Every visible page links to its real route. Then use
-`DEVELOPER-NAVIGATION-MAP.md` to find the owning file.
+the [developer navigation map](../DEVELOPER-NAVIGATION-MAP.md) to find the owning file.
 
 The dependency direction is:
 
@@ -38,4 +38,3 @@ backend repository.
 
 Anika, Maya, Riya, sample addresses and seeded messages are deliberate preview data.
 They are centralized in `src/data` or their owning feature component, not real users.
-

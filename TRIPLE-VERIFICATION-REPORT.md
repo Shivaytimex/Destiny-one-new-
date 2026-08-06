@@ -2,9 +2,9 @@
 
 ## Confirmation
 
-The separate `frontend/` handoff contains the current native Next.js UI work in
-TypeScript and Tailwind CSS. The original mixed repository remains available outside
-this delivery and was not deleted or overwritten.
+The repository root contains the current native Next.js UI work in TypeScript and
+Tailwind CSS. The original mixed repository remains preserved on a separate backup
+branch and is not part of this clean frontend delivery.
 
 ## Comparison result
 
