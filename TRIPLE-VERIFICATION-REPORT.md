@@ -9,17 +9,19 @@ this delivery and was not deleted or overwritten.
 ## Comparison result
 
 The clean handoff contains the current Next.js pages/components from the earlier
-frontend. Three legacy entries were intentionally replaced or excluded:
+frontend. The final review also restores the approved static visual-parity export:
 
 | Legacy entry | Clean replacement/reason |
 | --- | --- |
-| `src/pages/index.actual.jsx` | Replaced by native `src/pages/index.tsx`; no legacy iframe dependency. |
+| `src/pages/index.actual.jsx` | Replaced by typed `src/pages/index.tsx`; the parity bridge is now explicit and documented. |
 | `src/services/api.js` | Replaced by `src/data/frontendRepository.ts`; no executable API/backend coupling. |
-| `public/actual-app/**` and `public/push-sw.js` | Excluded because they are legacy generated/runtime bundles, not source for the clean frontend. |
+| `public/actual-app/**` | Restored as the latest reviewed browser-only parity export (built August 4, 2026 at 11:53 PM). |
+| `public/push-sw.js` | Excluded because production push registration belongs to the later integration phase. |
 
 No current native Next.js page or feature component was removed during this cleanup.
-Images required by the clean source are present or use their declared remote source;
-the removed `actual-app` assets are not referenced by the clean application.
+The modular home remains available at `/web-home`; `/` presents the exact reviewed
+experience from `public/actual-app` so local product QA does not show the older
+simplified home while the remaining screens are migrated.
 
 ## Delivered UI coverage
 

@@ -19,6 +19,7 @@ const required = [
   "tailwind.config.ts",
   "postcss.config.js",
   "src/pages/index.tsx",
+  "src/pages/web-home.tsx",
   "src/pages/login.tsx",
   "src/pages/register.tsx",
   "src/pages/search.tsx",
@@ -36,6 +37,7 @@ const required = [
   "src/data/frontendRepository.ts",
   "src/data/routeManifest.ts",
   "contracts/REST-API-HANDOFF.md",
+  "public/actual-app/index.html",
 ];
 
 const missing = required.filter((path) => !existsSync(join(project, path)));
@@ -43,7 +45,6 @@ const forbidden = [
   "backend",
   "src/services/api.ts",
   "src/pages/index.actual.tsx",
-  "public/actual-app",
   "public/push-sw.js",
 ].filter((path) => existsSync(join(project, path)));
 const invalidSource = files(source)

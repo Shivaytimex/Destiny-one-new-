@@ -51,6 +51,14 @@ pnpm dev
 Open `http://localhost:3000/preview` to review every page. Read
 `DEVELOPER-HANDOFF-NOTE.md` before integrating anything.
 
+`http://localhost:3000/` is the visual-parity entry point. It loads the latest
+reviewed DestinyOne static web export from `public/actual-app/`, including the UI
+approved through August 4, 2026. The maintainable modular Next.js implementation
+remains available at `/web-home` and through the route catalog at `/preview`.
+
+The parity export is a browser-only review artifact. It does not add backend,
+database, MySQL, Supabase migrations or server implementation to this repository.
+
 ## Why there is no backend folder
 
 The developer explicitly requested that the stable frontend be delivered first and
