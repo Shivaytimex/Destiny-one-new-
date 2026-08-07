@@ -1,6 +1,8 @@
 import "../styles/globals.css";
 import "../styles/gifts.css";
 import "../styles/gift-response.css";
+import "../styles/destiny-shell.css";
+import "../styles/destiny-home.css";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { configureWebAnalytics, trackWebAnalytics } from "../services/analytics";
