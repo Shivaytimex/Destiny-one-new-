@@ -173,6 +173,7 @@ const showcasePreviewScreen=getPreviewScreen();
 const showcasePreviewState=getPreviewState();
 const isPreviewAccessMode=Platform.OS==='web'&&typeof window!=='undefined'&&(
   window.location.hostname.endsWith('.chatgpt.site')||
+  window.location.hostname.endsWith('.workers.dev')||
   new URLSearchParams(window.location.search).get('previewAccess')==='1'
 );
 const showcaseOnboardingScreens=new Set<Screen>(['splash','welcome','auth','otp','verify','modeSelect','coupleSetup','profileSetup','vibes','intent','alignment']);

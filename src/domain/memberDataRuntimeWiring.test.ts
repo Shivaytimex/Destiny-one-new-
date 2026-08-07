@@ -15,6 +15,12 @@ describe('member data runtime wiring', () => {
     expect(app).toContain('memberDataRuntime.allowsMockMatches?null:[]');
   });
 
+  it('allows the signed-out showcase flow on approved public preview hosts', () => {
+    expect(app).toContain("window.location.hostname.endsWith('.chatgpt.site')");
+    expect(app).toContain("window.location.hostname.endsWith('.workers.dev')");
+    expect(app).toContain("new URLSearchParams(window.location.search).get('previewAccess')==='1'");
+  });
+
   it('shows an honest retry state when server matches fail', () => {
     expect(app).toContain("setMatchLoadState('error')");
     expect(app).toContain('We will never replace unavailable member data with demo profiles.');
